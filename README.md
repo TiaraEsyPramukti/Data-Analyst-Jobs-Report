@@ -42,7 +42,7 @@ word and drop the stop words and certain words such as `data` and
 visualize the words frequency that more than 60 occurrences.
 
 ![job
-title](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-1-1.png)
+title](https://github.com/TiaraEsyPramukti/Data-Analyst-Jobs-Report/blob/master/the_most_common_words_job_titles.png)
 
 From the plot we could see that the most common words use in the job
 title are “Senior”, “Business”, and “Junior”. Two of them , “Senior” and
@@ -71,7 +71,7 @@ that the positions that not mentioning bachelor’s degree, required the
 work experience instead.
 
 ![minimum degree
-requirement](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-2-1.png)
+requirement](https://github.com/TiaraEsyPramukti/Data-Analyst-Jobs-Report/blob/master/minimum_degree_required.png)
 
 **Actual degree required**
 
@@ -84,7 +84,7 @@ that the positions also open the opportunity to the lower degree but
 prefer to choose the higher one.
 
 ![all degree
-requirement](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-3-1.png)
+requirement](https://github.com/TiaraEsyPramukti/Data-Analyst-Jobs-Report/blob/master/the_degree_required.png)
 
 ## Experience Requirement
 
@@ -101,7 +101,7 @@ words used in the job title such as senior, lead, II, or III that inform
 us the jobs are for higher level.
 
 ![experience
-requirement](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-4-1.png)
+requirement](https://github.com/TiaraEsyPramukti/Data-Analyst-Jobs-Report/blob/master/the_years_experience_required.png)
 
 ## Tools Requirement
 
@@ -117,7 +117,7 @@ database tools are SQL and Access, for analysis and visualization tools
 are Excel and Tableau, for programming tools are Python and R.
 
 ![tools
-requirement](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-5-1.png)
+requirement](https://github.com/TiaraEsyPramukti/Data-Analyst-Jobs-Report/blob/master/the_tools_required.png)
 
 # Salaries
 
@@ -136,21 +136,21 @@ we have outlier at the large value of the data (or the data has positive
 skew distribution).
 
 ![average
-salary](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-6-1.png)
+salary](https://github.com/TiaraEsyPramukti/Data-Analyst-Jobs-Report/blob/master/average_annual_salary.png)
 
 ## Salaries by City
 
 **Which location has the highest salary estimate?**
 
 ![salaries by
-city](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-7-1.png)
+city](https://github.com/TiaraEsyPramukti/Data-Analyst-Jobs-Report/blob/master/highest_annual_salary_bycity.png)
 
 ## Salaries by State
 
 **Which state has the highest average salary estimate?**
 
 ![salaries by
-state](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-8-1.png)
+state](https://github.com/TiaraEsyPramukti/Data-Analyst-Jobs-Report/blob/master/highest_annual_salary_bystate.png)
 
 Data Source : Github - picklesueat  
 \- (<https://github.com/picklesueat/data_jobs_data>)  
