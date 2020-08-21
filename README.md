@@ -6,7 +6,7 @@ provided by picklesueat. This analysis is for private project exercise.
 
   - The data report can be found bellow  
   - The analysis was conducted with R  
-  - The code can be found here  
+  - [The code can be found here]https://github.com/TiaraEsyPramukti/Data-Analyst-Jobs-Report/blob/master/data_analyst_job_offers_report.Rmd  
   - [The data sets can be found
     here](https://github.com/picklesueat/data_jobs_data)
 
