@@ -42,7 +42,8 @@ word and drop the stop words and certain words such as `data` and
 `analyst` (because they are the job we are discuss about). Then, we
 visualize the words frequency that more than 60 occurrences.
 
-![](data_analyst_job_offers_report_files/figure-gfm/job%20title-1.png)<!-- -->
+![job
+title](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-1-1.png)
 
 From the plot we could see that the most common words use in the job
 title are “Senior”, “Business”, and “Junior”. Two of them , “Senior” and
@@ -70,7 +71,8 @@ degree. We have looked manually to the data and got some information
 that the positions that not mentioning bachelor’s degree, required the
 work experience instead.
 
-![](data_analyst_job_offers_report_files/figure-gfm/minimum%20degree%20required-1.png)<!-- -->
+![minimum degree
+requirement](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-2-1.png)
 
 **Actual degree required**
 
@@ -82,7 +84,8 @@ more than 1000 positions require Master’s Degree. Afterwards, we can say
 that the positions also open the opportunity to the lower degree but
 prefer to choose the higher one.
 
-![](data_analyst_job_offers_report_files/figure-gfm/all%20degree%20required-1.png)<!-- -->
+![all degree
+requirement](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-3-1.png)
 
 ## Experience Requirement
 
@@ -98,7 +101,8 @@ offers require 2-5 years of experience. It also relates to most common
 words used in the job title such as senior, lead, II, or III that inform
 us the jobs are for higher level.
 
-![](data_analyst_job_offers_report_files/figure-gfm/plot%20experience-1.png)<!-- -->
+![experience
+requirement](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-4-1.png)
 
 ## Tools Requirement
 
@@ -113,7 +117,8 @@ the plot bellow. From the plot we could say that the most required for
 database tools are SQL and Access, for analysis and visualization tools
 are Excel and Tableau, for programming tools are Python and R.
 
-![](data_analyst_job_offers_report_files/figure-gfm/tools%20required-1.png)<!-- -->
+![tools
+requirement](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-5-1.png)
 
 # Salaries
 
@@ -131,19 +136,22 @@ also say that the average of salary estimate is the median value because
 we have outlier at the large value of the data (or the data has positive
 skew distribution).
 
-![](data_analyst_job_offers_report_files/figure-gfm/plot%20average%20salary-1.png)<!-- -->
+![average
+salary](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-6-1.png)
 
 ## Salaries by City
 
 **Which location has the highest salary estimate?**
 
-![](data_analyst_job_offers_report_files/figure-gfm/salaries%20by%20city-1.png)<!-- -->
+![salaries by
+city](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-7-1.png)
 
 ## Salaries by State
 
 **Which state has the highest average salary estimate?**
 
-![](data_analyst_job_offers_report_files/figure-gfm/salaries%20by%20state-1.png)<!-- -->
+![salaries by
+state](data_analyst_job_offers_report_files/figure-gfm/unnamed-chunk-8-1.png)
 
 Data Source : Github - picklesueat  
 \- (<https://github.com/picklesueat/data_jobs_data>)  
