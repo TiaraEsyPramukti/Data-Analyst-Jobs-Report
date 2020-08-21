@@ -1,0 +1,573 @@
+---
+title: ""
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+# The Data Analyst Jobs Report
+
+This is a report of data analyst jobs offer. The data are collected from Glassdoor.com (some value show that they are from Employer Est.) and provided by picklesueat. This analysis is for private project exercise.   
+     
+* The data report can be found bellow    
+* The analysis was conducted with R    
+* The code can be found here     
+* [The data sets can be found here](https://github.com/picklesueat/data_jobs_data)    
+      
+This report is inspired by [Brian Dean](https://backlinko.com/seo-jobs-report)     
+      
+# Introduction
+
+The Data Analyst Job Offers data sets are for job offers from United States. The data provider has cleaned the data so it will be ready to use for analysis. This data sets contain 5631 observation of 18 variables. The data contain information such as `Salary Estimate`, `Job description`, or `Location` that are interesting to be analyzed.     
+
+
+```{r preparation, include=FALSE}
+
+library(tidyverse)
+library(skimr)
+library(extrafont)
+library(scales)
+library(tidytext)
+library(stopwords)
+
+datheme <- theme(text = element_text(family = "Consolas"),
+              plot.title = element_text(size = 20, hjust = .5,
+                                        margin = margin(0,0,10,0)),
+              plot.title.position = "plot",
+              plot.caption = element_text(color = "grey40", 
+                                         size = 9,
+                                         margin = margin(20, 0, -20, 0)),
+              plot.caption.position = "plot",
+              plot.background = element_rect(fill = "white"),
+              panel.background = element_rect(fill = "white"),
+              panel.grid.major.x = element_blank(),
+              panel.grid.major.y = element_line(color = "grey90"),
+              axis.line = element_line(size = 1),
+              axis.title.x = element_text(family = "Consolas", size = 16,
+                                        margin = margin(15,0,0,0)),
+              axis.title.y = element_text(family = "Consolas", size = 16,
+                                        margin = margin(0,15,0,0)),
+              axis.text = element_text(size = 13),
+              strip.background = element_blank(),
+              strip.text = element_text(colour = "black"),
+              plot.margin = margin(30,30,25,30))
+
+datheme_flip <- theme(panel.grid.major.x = element_line(color = "grey90"),
+                      panel.grid.major.y = element_blank())
+
+```
+     
+The data needed some wrangling to be able to use because there is some error in data writing. For example, `Salary Estimate` variable is character type of column when we expect it should be numeric type. Or, the use of "-1" value to what we expected to be `NA` value or `FALSE` value.     
+
+```{r data, include=FALSE}
+
+data_analyst_raw <- readr::read_csv('https://raw.githubusercontent.com/picklesueat/data_jobs_data/master/DataAnalyst.csv')
+
+head(data_analyst_raw)
+skimr::skim(data_analyst_raw)
+
+# Many of minimum value in character type of column are 2
+# So we would like to check unique value of some of them
+# (maybe that will be used)
+
+unique(data_analyst_raw$`Salary Estimate`)
+unique(data_analyst_raw$`Location`)
+unique(data_analyst_raw$`Headquarters`)
+
+# Turns out that character length that is 2 are "-1" that represent NA
+# So we would like to change them into NA value
+# But in `Easy Apply` column, "-1" represent "False"
+
+# Turns out that some value of `Salary Estimate` is from "(Employer est.)"
+# So we decided to left that to be NA value too
+# OR SHOULD WE JUST INCLUDE THEM (Employer est.)?
+
+data_analyst <-
+  data_analyst_raw %>%
+  distinct(`Job Title`, `Salary Estimate`, `Company Name`, `Location`, .keep_all = TRUE) %>%
+  transmute(
+    `Job Title`,
+    `Lower Bound Salary` = str_extract(`Salary Estimate`,
+                                       pattern = "([:digit:]{2,3})(?=K-)"),
+    `Lower Bound Salary` = as.numeric(`Lower Bound Salary`)*1000,
+    `Upper Bound Salary` = str_extract(`Salary Estimate`,
+                                       pattern = "([:digit:]{2,3})(?=K \\(G|K\\(E)"),
+    `Upper Bound Salary` = as.numeric(`Upper Bound Salary`)*1000,
+    `Average Salary` = (`Lower Bound Salary`+`Upper Bound Salary`)/2,
+    `Job Description`,
+    `Rating` = case_when(`Rating` != -1 ~ as.numeric(`Rating`), 
+                         TRUE ~ NA_real_),
+    `Company Name`,
+    `Location`,
+    `Headquarters` = case_when(`Headquarters` != "-1" ~ as.character(`Headquarters`), 
+                               TRUE ~ NA_character_),
+    `Size` = case_when(`Size` != "-1" ~ as.character(`Size`), 
+                               TRUE ~ NA_character_),
+    `Founded` = case_when(`Founded` != -1 ~ as.numeric(`Founded`), 
+                               TRUE ~ NA_real_),
+    `Type of ownership` = case_when(`Type of ownership` != "-1" ~ as.character(`Type of ownership`), 
+                               TRUE ~ NA_character_),
+    `Industry` = case_when(`Industry` != "-1" ~ as.character(`Industry`), 
+                               TRUE ~ NA_character_),
+    `Sector` = case_when(`Sector` != "-1" ~ as.character(`Sector`), 
+                               TRUE ~ NA_character_),
+    `Revenue` = case_when(`Revenue` != "-1" ~ as.character(`Revenue`), 
+                               TRUE ~ NA_character_),
+    `Competitors` = case_when(`Competitors` != "-1" ~ as.character(`Competitors`), 
+                               TRUE ~ NA_character_),
+    `Easy Apply` = case_when(`Easy Apply` != "-1" ~ as.character(`Easy Apply`), 
+                               TRUE ~ "False"),
+    `Postal Code` = case_when(
+      `Location` == "Arizona"	~	"AZ",
+      `Location` == "California" ~ "CA",
+      `Location` == "Colorado" ~ "CO",
+      `Location` == "Connecticut" ~ "CT",
+      `Location` == "Florida" ~ "FL",
+      `Location` == "Georgia" ~ "GA",
+      `Location` == "Illinois" ~ "IL",
+      `Location` == "Maryland" ~ "MD",
+      `Location` == "Massachusetts" ~ "MA",
+      `Location` == "Michigan" ~ "MI",
+      `Location` == "Minnesota" ~ "MN",
+      `Location` == "New Jersey" ~ "NJ",
+      `Location` == "North Carolina" ~ "NC",
+      `Location` == "Oklahoma" ~ "OK",
+      `Location` == "South Carolina" ~ "SC",
+      `Location` == "Texas" ~ "TX",
+      `Location` == "Utah" ~ "UT",
+      `Location` == "Virginia" ~ "VA",
+      TRUE ~ (`Postal Code` = str_extract(`Location`,
+                                         pattern = "[:upper:]{2}$"))),
+    `Postal Code` = as.factor(`Postal Code`)
+    )
+
+skimr::skim(data_analyst)
+
+```
+
+# Job Title     
+     
+## Common Words     
+     
+**What words are the most used in the job title?**     
+     
+We wanted to know what words the most used in data analyst job offers in this data. It also gives us insight what the most offered role at US. In this data, we applied simple text mining on `Job Title` variable. Using function by `tidytext` package, we tokenize the job title into single word and drop the stop words and certain words such as `data` and `analyst` (because they are the job we are discuss about). Then, we visualize the words frequency that more than 60 occurrences.     
+    
+    
+``` {r fig.cap = "job title", fig.height = 13, fig.width = 11}
+
+data_analyst %>%
+  select(`Job Title`) %>%
+  mutate(line = row_number()) %>%
+  unnest_tokens(word, `Job Title`) %>%
+  anti_join(get_stopwords()) %>%
+  filter(
+    !word %in% c("data", "analyst", "â")
+  ) %>%
+  mutate(
+    word = case_when(
+      word == "sr" ~ "Senior",
+      word == "jr" ~ "Junior",
+      word %in% c("i", "ii", "iii", "bi", "sql") ~ str_to_upper(word),
+      TRUE ~ str_to_title(word)
+    )
+  ) %>%
+  count(word, sort = TRUE) %>%
+  filter(n >= 60) %>%
+  ggplot(aes(x = reorder(word, n),
+             y = n)) +
+  geom_col(fill = "#2c7fb8", width = 0.3) +
+  geom_point(shape = 21, fill = "#ffffcc", colour = "#253494", size = 8, stroke= 2) +
+  geom_text(aes(label = n),
+            color = "grey20", size = 2.8, hjust = 0.5, vjust = 0.4,
+            family = "Consolas") +
+  annotate(geom="text", x = 18, y = 600, family = "Consolas",
+           label = 'Most of word used for data analyst\njob titles are "Senior", "Business", and "Junior".\nThe word senior and junior show\nthe seniority level.\nThere is the word "II" and "III".\nIt also shows the seniority level\nof the offered jobs.',
+           color = "black", size = 5) +
+  coord_flip() +
+  scale_y_continuous(labels = comma, position = "left",
+                     limits = c(0,1100),
+                     expand = c(0.025, 0.025)) +
+  scale_x_discrete(expand = c(0.025, 0.025)) +
+  labs(title = "The Most Common Words Used\nin Data Analyst Job Titles",
+       y = "Frequency",
+       x = "Words",
+       caption = "Data Analyst Report\nby Tiara Esy Pramukti") +
+  datheme +
+  datheme_flip
+
+ggsave("the_most_common_words_job_titles.png", width = 11, height = 12)
+
+
+```
+
+From the plot we could see that the most common words use in the job title are "Senior", "Business", and "Junior". Two of them , "Senior" and "Junior", represent the seniority level of the jobs. There are also another words on the plot that represent the seniority level such as "II", "III", and "Lead". The other words represent function or sector of offered jobs.
+     
+     
+     
+# Job Description
+     
+## Education Requirement     
+     
+**What degree are the most required in the job offers?**     
+     
+Job offers usually describe minimum education as requirement for applying it. In this data sets we could find education requirement in `Job Description` variable. To finding the education we just simply convert the value of column into lower case alphabet and look for the words related to the degree itself.    
+     
+```{r education exctract, echo=FALSE, include=FALSE}
+
+data_analyst_edu <-
+  data_analyst %>%
+  mutate(
+    `Job Description` = str_to_lower(`Job Description`)
+  ) %>%
+  mutate(
+    bachelors = if_else(str_detect(`Job Description`, "b.s.|b.sc.|bsc|bachelor|undergrad|college degree"), 1, 0),
+    masters = if_else(str_detect(`Job Description`, "m.sc.|msc|master"), 1, 0),
+    doctorate = if_else(str_detect(`Job Description`, "p.hd|phd|doctora"), 1, 0)
+  ) %>% 
+  filter(!is.na(bachelors)) %>% 
+  mutate(
+    `Education` = case_when(
+      bachelors + masters + doctorate == 0 ~ "none",
+      bachelors == 1 ~ "bachelors",
+      bachelors == 0 & masters == 1 ~ "masters",
+      bachelors + masters == 0 & doctorate == 1 ~ "doctorate"
+    )
+  ) 
+
+```
+     
+From the plot we could see that minimum degree most required is Bachelor's Degree. In total we get 5369 positions require Bachelors, 18 require Master's, 5 require Doctorate, and 221 not mentioning the degree. We have looked manually to the data and got some information that the positions that not mentioning bachelor's degree, required the work experience instead.   
+
+```{r fig.cap = "minimum degree requirement", include = TRUE, fig.height = 9, fig.width = 11}
+
+data_analyst_edu %>%
+  mutate(
+    `Education` = str_to_title(`Education`),
+    `Education` = factor(`Education`, levels = c("None", "Bachelors", "Masters", "Doctorate"))
+  ) %>%
+  count(`Education`, sort = TRUE) %>%
+  ggplot() +
+  geom_col(aes(x = `Education`, y = n, fill = `Education`),
+           show.legend = FALSE, position = "dodge") +
+  geom_text(aes(x = `Education`,
+                y = n, label = n),
+            color = "grey20", size = 5, hjust = 0.5, vjust = -0.4,
+            family = "Consolas") +
+  annotate(geom="text", x = 3.5, y = 4000, family = "Consolas",
+           label = paste("More than 90% job offers\nrequire Bachelor's Degree\nas minimum education\nthe candidates should have."),
+           color = "black", size = 5) +
+  ylim(0,6000) +
+  scale_x_discrete(drop = FALSE) +
+  labs(title = "Minimum Degree Required\nin Data Analyst Job Offers",
+       y = "Number of Required",
+       x = "Degree",
+       caption = "Data Analyst Report\nby Tiara Esy Pramukti") +
+  scale_fill_manual(values = c('#a1dab4', '#41b6c4','#2c7fb8','#253494')) +
+  datheme
+
+ggsave("minimum_degree_required.png", width = 11, height = 9)
+
+
+```
+    
+**Actual degree required**     
+     
+If we looked on the plot above, we would say that not so many positions for data analyst jobs require Master's or Doctorate degree. But if we looked at the data manually, we'll find that actually many of them prefer to require Master's degree. On the plot bellow, we could see that more than 1000 positions require Master's Degree. Afterwards, we can say that the positions also open the opportunity to the lower degree but prefer to choose the higher one.      
+
+
+```{r fig.cap = "all degree requirement", fig.height = 9, fig.width = 11}
+
+data_analyst_edu %>%
+  select(bachelors, masters, doctorate) %>%
+  mutate(
+    none = case_when(
+      bachelors + masters + doctorate == 0 ~ 1,
+      TRUE ~ 0)
+    ) %>%
+  gather("education", "n", bachelors:none) %>%
+  group_by(education) %>%
+  summarise(x = sum(n)) %>%
+  mutate(
+    education = factor(education, levels = c("none", "bachelors", "masters", "doctorate"))
+    ) %>%
+  ggplot() +
+  geom_col(aes(x = education, y = x, fill = education),
+           show.legend = FALSE, position = "dodge") +
+  geom_text(aes(x = education,
+                y = x, label = x),
+            color = "grey20", size = 5, hjust = 0.5, vjust = -0.4,
+            family = "Consolas") +
+  ylim(0,6000) +
+  scale_x_discrete(drop = FALSE) +
+  labs(title = "Degree Required\nin Data Analyst Job Offers",
+       y = "Number of Required",
+       x = "Degree",
+       caption = "Data Analyst Report\nby Tiara Esy Pramukti") +
+  scale_fill_manual(values = c('#a1dab4','#41b6c4','#2c7fb8','#253494')) +
+  datheme
+
+ggsave("the_degree_required.png", width = 11, height = 9)
+
+
+```
+     
+## Experience Requirement     
+     
+Still using `Job Description` variable, we would like to look for the experience years require for data analyst jobs. We simply extracted the variable by looking for phrase that similar to "years experience" or another like that.      
+     
+```{r experience}
+
+data_analyst_exp <-
+  data_analyst %>%
+  mutate(
+    `Job Description` = str_to_lower(`Job Description`)
+  ) %>%
+  mutate(
+    experience = str_extract(`Job Description`,
+                             "1 year experience|fresh graduate|([0-9]+|[0-9]+\\+|[0-9]+\\-[0-9]+) years experience|experience: ([0-9]+|[0-9]+\\+|[0-9]+\\-[0-9]+) year|experience ([0-9]+|[0-9]+\\+|[0-9]+\\-[0-9]+) year|experience of ([0-9]+|[0-9]+\\+|[0-9]+\\-[0-9]+) year|([0-9]+|[0-9]+\\+|[0-9]+\\-[0-9]+) years.* experience"),
+    experience = case_when(
+      experience == "fresh graduate" ~ 0,
+      TRUE ~ as.numeric(str_extract(experience, "[0-9]+"))
+    ),
+    experience = case_when(
+      experience > 15 ~ NA_real_,
+      TRUE ~ experience
+    )
+  )
+
+```
+     
+When we looked at the data manually, we got some information that there is position that require more than 20 years experience, but we didn't include it to the plot. From the plot, we can say that most of job offers require 2-5 years of experience. It also relates to most common words used in the job title such as senior, lead, II, or III that inform us the jobs are for higher level.      
+
+```{r fig.cap = "experience requirement", fig.height = 9, fig.width = 11}
+
+data_analyst_exp %>%
+  ggplot() +
+  geom_bar(aes(x = experience), fill = "#41b6c4", color = "#253494",
+           show.legend = FALSE, position = "dodge") +
+  annotate(geom="text", x = 12, y = 600, family = "Consolas",
+           label = "Most of job offers require\n2-5 years of experience.\nIt also relates to 'Senior',\nthe most common words used in job title,\nthat should require some years of experience.",
+           color = "black", size = 5) +
+  ylim(0,800) +
+  labs(title = "Years of Experience Required\nin Data Analyst Job Offers",
+       y = "Number of Job Offers",
+       x = "Years of Experience",
+       caption = "Data Analyst Report\nby Tiara Esy Pramukti") +
+  scale_x_continuous(breaks = c(0:15)) +
+  datheme
+
+ggsave("the_years_experience_required.png", width = 11, height = 9)
+
+```
+     
+## Tools Requirement     
+     
+Apart from education and years experience, job positions require some tools the candidates should have. They are database, BI, or programming tools. We analyzed this aspect by tokenize the `Job Description` variable into words and then filter them with some written tools by writer.     
+
+```{r tokenize job desc, echo=FALSE, include=FALSE}
+
+da_desc <-
+  data_analyst %>%
+  select(`Job Description`) %>%
+  mutate(line = row_number()) %>%
+  unnest_tokens(word, `Job Description`) %>%
+  anti_join(get_stopwords())
+
+```
+     
+We collect the tools that more than 20 occurrences and visualize them on the plot bellow. From the plot we could say that the most required for database tools are SQL and Access, for analysis and visualization tools are Excel and Tableau, for programming tools are Python and R.     
+     
+```{r fig.cap = "tools requirement", fig.height = 9, fig.width = 11}
+ 
+da_desc %>%
+  filter(word %in% c("sql", "mysql", "nosql", "python", "r", "sas", "scala", "javascript", "scala",
+                     "julia", "java", "ruby", "php","c", "css", "bash", "matlab", "powershell",
+                     "assembly", "rush", "dart", "shell", "tableau", "access", "spss", "excel",
+                     "bi", "powerbi", "qlikview", "cognos", "erwin", "chartio", "looker", "postgres",
+                     "mongodb", "apache")) %>%
+  group_by(word) %>%
+  distinct(line) %>%
+  mutate(
+    word = case_when(
+      word %in% c("r", "sas", "spss", "bi", "sql", "c", "css", "php") ~ str_to_upper(word),
+      TRUE ~ str_to_title(word)
+    )
+  ) %>%
+  count(word, sort = TRUE) %>%
+  filter(n>=20) %>%
+  ggplot() +
+  geom_col(aes(x = reorder(word, n),
+               y = n), fill = "#253494",
+           width = 0.8, show.legend = FALSE) +
+  geom_text(aes(x = reorder(word, n),
+                y = n, label = n),
+            color = "grey45", size = 3, hjust = -0.1, vjust = 0.5,
+            family = "Consolas") +
+  coord_flip() +
+  scale_y_continuous(labels = comma, position = "left",
+                     limits = c(0,3500),
+                     expand = c(0.025, 0.025)) +
+  scale_x_discrete(expand = c(0.035, 0.035)) +
+  labs(title = "The Tools Required in\nData Analyst Job Offers",
+       y = "Frequency",
+       x = "Tools",
+       caption = "Data Analyst Report\nby Tiara Esy Pramukti") +
+  datheme +
+  datheme_flip
+
+ggsave("the_tools_required.png", width = 11, height = 10)
+
+```
+
+# Salaries     
+     
+## Salary Estimate    
+     
+**What are the salary estimate for the data analyst jobs in USA?**     
+     
+Before, I have mentioned that `Salary Estimate` column is character type of column where we expected to be numeric type of column. So, we extracted it and got the salary range. For the analysis we use an addition column, called `Average Salary`. The range value of the salary estimate can be seen on the plot bellow. We could see that the average of salary estimate for data analyst jobs is around $72K. But we could also say that the average of salary estimate is the median value because we have outlier at the large value of the data (or the data has positive skew distribution).     
+     
+```{r average salary, echo=FALSE, include=FALSE}
+
+# It can't be good to be used 
+# because we don't have the "actual" upper/lower bound salary in histogram 
+# hence we can't see the "actual" representative of the salary
+# but the data actually don't give us the "actual" salary
+# So using just average salary value wouldn't be problem, right?
+
+dasmean = round(mean(data_analyst$`Average Salary`, na.rm = TRUE), 0)
+dasmedian = round(median(data_analyst$`Average Salary`, na.rm = TRUE), 0)
+
+```
+
+```{r fig.cap = "average salary", fig.height = 9, fig.width = 11}
+
+ggplot(data_analyst) +
+  stat_bin(aes(x = `Average Salary`), binwidth = 4195,
+           fill = "#66c2a5", color = "#5ab4ac", alpha = 0.8) +
+  geom_vline(xintercept = dasmean,
+             linetype = 2, size = 1, color = "#8c510a") +
+  geom_vline(xintercept = dasmedian,
+             linetype = 2, size = 1, color = "#018571") +
+  annotate(geom="text", x = 90000, y = 500, family = "Consolas",
+           label = paste("Mean : $",dasmean),
+           color = "#8c510a", size = 4) +
+  annotate(geom="text", x = 45000, y = 580, family = "Consolas",
+           label = paste("Median : $",dasmedian),
+           color = "#018571") +
+  labs(title = paste("The Average Data Analyst\nAnnual Salary is $",round(dasmean,0),"/Year"),
+       x = "Average Salary (USD)",
+       y = "Number of Job Offers",
+       caption = "Data Analyst Report\nby Tiara Esy Pramukti") +
+  scale_y_continuous(expand = c(0,0), limits = c(0, 700)) +
+  scale_x_continuous(labels = comma, limits = c(20000, 160000)) +
+  datheme
+
+ggsave("average_annual_salary.png", width = 11, height = 9)
+
+
+```
+     
+## Salaries by City     
+     
+**Which location has the highest salary estimate?**    
+      
+
+```{r fig.cap = "salaries by city", fig.height = 13, fig.width = 11}
+
+data_analyst %>%
+  arrange(desc(`Average Salary`)) %>%
+  distinct(`Location`, .keep_all = TRUE) %>%
+  top_n(60, `Average Salary`) %>%
+  ggplot() +
+  geom_col(aes(x = reorder(`Location`, `Average Salary`),
+             y = `Average Salary`,
+             fill = case_when(`Postal Code` == "CA" ~ "a",
+                              `Postal Code` == "MD" ~ "b",
+                              TRUE ~ "z")),
+           width = 0.8, show.legend = FALSE) +
+  geom_text(aes(x = reorder(`Location`, `Average Salary`),
+               y = `Average Salary`, label = paste("$",`Average Salary`/1000,"K")),
+            color = "#8c510a", size = 4, hjust = -0.1, vjust = 0.5,
+            family = "Consolas") +
+  annotate(geom="text", x = 61, y = 135000, family = "Consolas",
+           label = "California", color = "white", size = 3.5) +
+  annotate(geom="text", x = 35, y = 105000, family = "Consolas",
+           label = "Maryland", color = "white", size = 3.5) +
+  coord_flip() +
+  scale_y_continuous(labels = comma, position = "left",
+                     limits = c(0,180000),
+                     expand = c(0.025, 0.025)) +
+  scale_x_discrete(expand = c(0.015, 0.015)) +
+  scale_fill_manual(values = c("#01665e", "#35978f", "grey90")) +
+  labs(title = "The Highest Annual Salary by City\nfor Data Analyst Job",
+       y = "Average Salary (USD)",
+       x = "Location",
+       caption = "Data Analyst Report\nby Tiara Esy Pramukti") +
+  datheme +
+  datheme_flip
+
+ggsave("highest_annual_salary_bycity.png", width = 11, height = 13)
+
+
+```
+
+## Salaries by State     
+     
+**Which state has the highest average salary estimate?**    
+     
+```{r fig.cap = "salaries by state", fig.height = 13, fig.width = 11}
+
+data_analyst %>%
+  select(`Postal Code`, `Lower Bound Salary`,
+         `Upper Bound Salary`, `Average Salary`) %>%
+  filter(!is.na(`Postal Code`)) %>%
+  na.omit() %>%
+  group_by(`Postal Code`) %>%
+  summarise(min = min(`Lower Bound Salary`, na.rm = TRUE),
+            avg = mean(`Average Salary`, na.rm = TRUE),
+            max = max(`Upper Bound Salary`, na.rm = TRUE),
+            n = n()
+            ) %>%
+  filter(n >= 4) %>%
+  ggplot() +
+  geom_segment(aes(x = reorder(`Postal Code`, avg),
+                   xend = reorder(`Postal Code`, avg),
+                   y = min, yend = max),
+               color = "grey45", size = 1) +
+  geom_point(aes(x = reorder(`Postal Code`, avg), y = avg),
+             color = "#80cdc1", size = 6) +
+  geom_text(aes(x = reorder(`Postal Code`, avg), y = avg,
+                label = paste("$",round(avg/1000, 0),"K")),
+            color = "#01665e", size = 4, hjust = 1.3, vjust = -0.5,
+            fontface = "bold", family = "Consolas") +
+  geom_text(aes(x = reorder(`Postal Code`, avg), y = avg,
+                label = paste("(n =",n,")")),
+            color = "#80cdc1", size = 4, hjust = -0.2, vjust = -0.5,
+            fontface = "bold", family = "Consolas") +
+  coord_flip() +
+  scale_y_continuous(labels = comma, position = "left",
+                     limits = c(0,210000)) +
+  scale_x_discrete(expand = c(0,2)) +
+  labs(title = "The Highest Annual Salary by State\nfor Data Analyst Job",
+       y = "Average Salary (USD)",
+       x = "Location",
+       caption = "Data Analyst Report\nby Tiara Esy Pramukti") +
+  datheme +
+  datheme_flip
+
+ggsave("highest_annual_salary_bystate.png", width = 11, height = 13)
+
+
+```
+
+\tiny
+Data Source : Github - picklesueat     
+- (https://github.com/picklesueat/data_jobs_data)     
+Inspired by SEO Job Report - Brian Dean     
+- (https://backlinko.com/seo-jobs-report)     
+- Reference (https://www.kaggle.com/erickdcohen/is-there-a-correlation-between-rating-and-salary)     
+
